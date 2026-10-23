@@ -89,6 +89,8 @@ li:last-child{border-bottom:0}
 .seg button{padding:6px 12px;border:0;border-radius:7px;background:none;color:var(--muted);font:600 13px Manrope,sans-serif;cursor:pointer}
 .seg button[aria-pressed=true]{background:hsl(var(--h,200) 55% 34%);color:#fff}
 .seg button:focus-visible{outline:3px solid hsl(var(--h,200) 70% 55%);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:13px;color:var(--muted);margin:0 2px -4px}
+.legend i{display:inline-block;width:14px;height:8px;border-radius:4px;margin-right:6px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -398,17 +400,32 @@ function dayAdvice(d){
 }
 const hueOf=t=>Math.round(215-Math.max(0,Math.min(1,(t+30)/65))*185);
 const wColor=c=>[1,2,5,30].includes(c)?"#f2a30f":[3,4].includes(c)?"#e39a2d":c===11?"#8b99a8":[12,13,14,18,39,40].includes(c)?"#3b82d6":[15,16,17,41,42].includes(c)?"#7b5cd6":((c>=19&&c<=26)||c===29||c===43||c===44)?"#4fb3d9":"#7d8ea3";
+const DRY=[246,195,122],MID=[158,208,232];
+const mixc=(a,b,t)=>a.map((v,n)=>Math.round(v+(b[n]-v)*t));
+function precipColor(k,cold){
+  const wet=cold?[92,184,240]:[47,127,216];
+  const c=k<0.5?mixc(DRY,MID,k*2):mixc(MID,wet,(k-0.5)*2);
+  return "rgb("+c.join(",")+")";
+}
+const LEGEND='<div class="legend"><span><i style="background:rgb(246,195,122)"></i>сухо</span><span><i style="background:rgb(47,127,216)"></i>осадки</span><span>чем темнее синий, тем вероятнее</span></div>';
 function tl(d,i){
-  const h=d.hours||[];
-  if(!h.length)return "";
-  const cells=h.map(t=>`<i style="background:hsl(${hueOf(t)} 75% 52%)"></i>`).join("");
+  const T=d.hours||[];
+  if(!T.length)return "";
+  const stops=T.map((t,h)=>{
+    const prob=d.prob&&d.prob[h]!=null?d.prob[h]/100:0;
+    const mm=d.mm&&d.mm[h]!=null?d.mm[h]:0;
+    let k=prob;
+    if(mm>=0.1)k=Math.max(k,0.6);
+    if(mm>=1)k=1;
+    return precipColor(Math.min(k,1),t<=0.5)+" "+((h+0.5)/24*100).toFixed(2)+"%";
+  }).join(",");
   const ticks=[0,2,4,6,8,10,12,14,16,18,20,22].map(x=>`<em class="${x%4?"lo":""}" style="left:${(x/24*100).toFixed(2)}%">${hourLbl(x)}</em>`).join("");
   const now=(i===0&&d.nowH!=null)?`<b class="nowm" style="left:${(d.nowH/24*100).toFixed(1)}%"></b>`:"";
-  return `<span class="tl" aria-hidden="true"><span class="tbar">${cells}${now}</span><span class="tick">${ticks}</span></span>`;
+  return `<span class="tl" aria-hidden="true"><span class="tbar" style="background:linear-gradient(90deg,${stops})">${now}</span><span class="tick">${ticks}</span></span>`;
 }
 function renderFc(arr){
   const lo=Math.min(...arr.map(d=>d.night.temperature)),hi=Math.max(...arr.map(d=>d.day.temperature)),span=Math.max(hi-lo,1);
-  $("fclist").innerHTML=arr.map((d,i)=>{
+  $("fclist").innerHTML=LEGEND+arr.map((d,i)=>{
     const x=d.day.extended||{};
     const pr=Math.max(d.day.rainProbabilityValue||0,d.day.snowProbabilityValue||0);
     const name=i===0?"Сегодня":i===1?"Завтра":d.dayOfWeek;
@@ -462,7 +479,9 @@ function buildFc(d){
         rainProbabilityValue:snowy?0:p,snowProbabilityValue:snowy?p:0,
         extended:{wind:dirOf(q.wind_direction_10m_dominant[i])+" "+Math.round(q.wind_speed_10m_max[i]*3.6)+" км/ч"}},
       night:{temperature:q.temperature_2m_min[i],realFeelValue:q.apparent_temperature_min[i]},
-      hours:(d.hourly&&d.hourly.temperature_2m?d.hourly.temperature_2m.slice(i*24,i*24+24):[])
+      hours:(d.hourly&&d.hourly.temperature_2m?d.hourly.temperature_2m.slice(i*24,i*24+24):[]),
+      prob:(d.hourly&&d.hourly.precipitation_probability?d.hourly.precipitation_probability.slice(i*24,i*24+24):[]),
+      mm:(d.hourly&&d.hourly.precipitation?d.hourly.precipitation.slice(i*24,i*24+24):[])
     };
   });
 }
@@ -470,7 +489,7 @@ async function load(item,query){
   $("choices").innerHTML="";
   status("Загружаю погоду…");
   try{
-    const d=await getJson(API+"?latitude="+item.lat+"&longitude="+item.lon+"&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant&hourly=temperature_2m&wind_speed_unit=ms&timezone=auto&forecast_days=10");
+    const d=await getJson(API+"?latitude="+item.lat+"&longitude="+item.lon+"&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant&hourly=temperature_2m,precipitation_probability,precipitation&wind_speed_unit=ms&timezone=auto&forecast_days=10");
     const cu=d.current,[phrase,icon]=wmo(cu.weather_code),hm=cu.time.slice(11,16);
     apply({temperatureValue:cu.temperature_2m,windSpeedImperial:cu.wind_speed_10m/0.44704,extended:{precipitation:String(cu.precipitation)},iconCode:icon,realFeelValue:cu.apparent_temperature,phrase,now:hm},
       {info:{name:item.name},timeZoneName:d.timezone||item.tz,localTime:hm});
