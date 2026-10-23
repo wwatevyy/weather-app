@@ -74,8 +74,9 @@ li:last-child{border-bottom:0}
 .tbar{display:flex;height:12px;border-radius:6px;overflow:hidden;position:relative}
 .tbar i{flex:1}
 .nowm{position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
-.tick{display:block;position:relative;height:14px;margin-top:3px;font-size:10px;color:var(--muted)}
-.tick em{position:absolute;font-style:normal;transform:translateX(-50%);line-height:14px}
+.tick{display:block;position:relative;height:30px;margin-top:3px;font-size:10px;color:var(--muted)}
+.tick em.lo{top:14px}
+.tick em{position:absolute;top:0;font-style:normal;transform:translateX(-50%);line-height:14px}
 .day{border-left:6px solid hsl(var(--dh,200) 65% 52%);background:linear-gradient(100deg,hsl(var(--dh,200) 85% 93%),var(--surface) 60%)}
 .today{box-shadow:0 10px 26px -14px hsl(var(--dh,200) 75% 40%)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .day{background:linear-gradient(100deg,hsl(var(--dh,200) 45% 22%),var(--surface) 60%)}}
@@ -83,6 +84,11 @@ li:last-child{border-bottom:0}
 .di{width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,currentColor 16%,transparent);display:flex;align-items:center;justify-content:center}
 .dd{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
 .dd p{margin:0 0 4px;color:var(--muted);font-size:14px}
+.units{display:flex;gap:8px;justify-content:flex-end;margin:0 0 10px}
+.seg{display:flex;padding:3px;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.seg button{padding:6px 12px;border:0;border-radius:7px;background:none;color:var(--muted);font:600 13px Manrope,sans-serif;cursor:pointer}
+.seg button[aria-pressed=true]{background:hsl(var(--h,200) 55% 34%);color:#fff}
+.seg button:focus-visible{outline:3px solid hsl(var(--h,200) 70% 55%);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -96,6 +102,10 @@ li:last-child{border-bottom:0}
 <div class="choices" id="choices"></div>
 <div id="status" aria-live="polite"></div>
 
+<div class="units">
+  <div class="seg" role="group" aria-label="Температура"><button type="button" id="u-c" aria-pressed="true">°C</button><button type="button" id="u-f" aria-pressed="false">°F</button></div>
+  <div class="seg" role="group" aria-label="Формат времени"><button type="button" id="u-24" aria-pressed="true">24 ч</button><button type="button" id="u-12" aria-pressed="false">AM/PM</button></div>
+</div>
 <div class="tabs" role="tablist">
   <button id="tb-today" role="tab" aria-selected="true" type="button">Сегодня</button>
   <button id="tb-fc" role="tab" aria-selected="false" type="button">Прогноз</button>
@@ -197,11 +207,11 @@ function li(t){return `<li><span>${t}</span><span class="em" aria-hidden="true">
 function render(){
   const t=+$("t").value, w=+$("w").value;
   const f=Math.round(override!==null?override:feels(t,w));
-  $("tv").textContent=t+"°";
+  $("tv").textContent=fmt(t);
   $("wv").textContent=w+" м/с";
-  $("feel").textContent=(f>0?"+":"")+f+"°";
+  $("feel").textContent=fmt(f);
   const b=bands.find(x=>f<=x[0]);
-  $("verdict").textContent=b[1]+(f!==t?" · на термометре "+(t>0?"+":"")+t+"°":"");
+  $("verdict").textContent=b[1]+(f!==t?" · на термометре "+fmt(t):"");
   const hue=Math.max(0,Math.min(1,(f+30)/65));
   document.documentElement.style.setProperty("--h",Math.round(215-hue*185));
   const items=[...b[2]];
@@ -257,10 +267,10 @@ function localParts(){
   try{
     const h=parseInt(new Intl.DateTimeFormat("en-GB",{timeZone:place.tz,hour:"numeric",hour12:false}).format(d),10)%24;
     const time=new Intl.DateTimeFormat("ru-RU",{timeZone:place.tz,hour:"2-digit",minute:"2-digit",hour12:false}).format(d);
-    return {h,time};
+    return {h,time:clk(h,+time.slice(-2))};
   }catch(e){
     const m=/^(\d{1,2}):(\d{2})/.exec(place.fallback||"");
-    return m?{h:+m[1],time:m[0]}:null;
+    return m?{h:+m[1],time:clk(+m[1],+m[2])}:null;
   }
 }
 function periodOf(h){return h>=6&&h<11?"morning":h>=11&&h<17?"day":h>=17&&h<22?"evening":"night"}
@@ -333,7 +343,7 @@ function apply(c,loc){lastLive={c,loc};$("man").checked=false;lock(false);
   override=typeof c.realFeelValue==="number"?c.realFeelValue:null;
   place={tz:(loc&&loc.timeZoneName)||"",fallback:(loc&&loc.localTime)||""};
   const name=(loc&&loc.info&&loc.info.name)||(loc&&loc.localizedName)||"";
-  status([name,c.phrase,c.now?"обновлено "+c.now:""].filter(Boolean).join(" · "));
+  status([name,c.phrase,c.now?"обновлено "+clk(+c.now.slice(0,2),+c.now.slice(3,5)):""].filter(Boolean).join(" · "));
   render();
 }
 let curKey=null,fcKey=null,tab="today";
@@ -354,7 +364,25 @@ function wIcon(c){
   return W.cloud;
 }
 const svgI=(d,n)=>`<svg viewBox="0 0 24 24" width="${n}" height="${n}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
-const fmt=v=>(Math.round(v)>0?"+":"")+Math.round(v)+"°";
+let UF=false,U12=false;
+const fmt=v=>UF?Math.round(v*9/5+32)+"°":(Math.round(v)>0?"+":"")+Math.round(v)+"°";
+const clk=(h,m)=>U12?((h%12||12)+":"+String(m).padStart(2,"0")+" "+(h<12?"AM":"PM")):String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+const hourLbl=x=>U12?(x%12||12)+" "+(x<12?"AM":"PM"):String(x).padStart(2,"0")+":00";
+function syncUnits(){
+  $("u-c").setAttribute("aria-pressed",!UF);$("u-f").setAttribute("aria-pressed",UF);
+  $("u-24").setAttribute("aria-pressed",!U12);$("u-12").setAttribute("aria-pressed",U12);
+}
+function setUnits(f,t){
+  UF=f;U12=t;syncUnits();
+  try{localStorage.setItem("units",JSON.stringify({UF,U12}))}catch(e){}
+  if(!$("man").checked&&lastLive)apply(lastLive.c,lastLive.loc);else render();
+  if(place)drawScene();
+  if(fcData)renderFc(fcData);
+}
+$("u-c").onclick=()=>setUnits(false,U12);
+$("u-f").onclick=()=>setUnits(true,U12);
+$("u-24").onclick=()=>setUnits(UF,false);
+$("u-12").onclick=()=>setUnits(UF,true);
 function windMs(str){const m=/(\d+)/.exec(str||"");return m?+m[1]/3.6:0}
 function windText(str){const m=/^(\S+)\s+(\d+)/.exec(str||"");return m?m[1]+" "+Math.round(+m[2]/3.6)+" м/с":""}
 function dayAdvice(d){
@@ -374,7 +402,7 @@ function tl(d,i){
   const h=d.hours||[];
   if(!h.length)return "";
   const cells=h.map(t=>`<i style="background:hsl(${hueOf(t)} 75% 52%)"></i>`).join("");
-  const ticks=[0,2,4,6,8,10,12,14,16,18,20,22].map(x=>`<em style="left:${(x/24*100).toFixed(2)}%">${x}</em>`).join("");
+  const ticks=[0,2,4,6,8,10,12,14,16,18,20,22].map(x=>`<em class="${x%4?"lo":""}" style="left:${(x/24*100).toFixed(2)}%">${hourLbl(x)}</em>`).join("");
   const now=(i===0&&d.nowH!=null)?`<b class="nowm" style="left:${(d.nowH/24*100).toFixed(1)}%"></b>`:"";
   return `<span class="tl" aria-hidden="true"><span class="tbar">${cells}${now}</span><span class="tick">${ticks}</span></span>`;
 }
@@ -515,6 +543,8 @@ $("q").addEventListener("input",showSugg);
 $("q").addEventListener("blur",()=>setTimeout(hideSugg,150));
 $("q").addEventListener("keydown",e=>{if(e.key==="Enter"){hideSugg();find($("q").value)}});
 
+try{const u=JSON.parse(localStorage.getItem("units")||"null");if(u){UF=!!u.UF;U12=!!u.U12}}catch(e){}
+syncUnits();
 render();
 (function(){
   const tg=window.Telegram&&window.Telegram.WebApp;
