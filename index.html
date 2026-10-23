@@ -91,6 +91,11 @@ li:last-child{border-bottom:0}
 .seg button:focus-visible{outline:3px solid hsl(var(--h,200) 70% 55%);outline-offset:2px}
 .legend{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:13px;color:var(--muted);margin:0 2px -4px}
 .legend i{display:inline-block;width:14px;height:8px;border-radius:4px;margin-right:6px;vertical-align:middle}
+.swr{display:flex;align-items:center;gap:8px}
+.rst{display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border:0;border-radius:10px;background:none;color:var(--muted);cursor:pointer}
+.rst:disabled{opacity:.35;cursor:not-allowed}
+.rst:not(:disabled){color:var(--text)}
+.rst:focus-visible{outline:3px solid hsl(var(--h,200) 70% 55%);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -120,7 +125,7 @@ li:last-child{border-bottom:0}
 </section>
 
 <section class="card">
-  <div class="sw"><span>Выбрать вручную</span><label class="tg"><input type="checkbox" id="man" role="switch" aria-label="Выбрать вручную"><i class="knob"></i></label></div>
+  <div class="sw"><span>Выбрать вручную</span><div class="swr"><button id="rst" class="rst" type="button" disabled aria-label="Сбросить к реальной погоде" title="Сбросить"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button><label class="tg"><input type="checkbox" id="man" role="switch" aria-label="Выбрать вручную"><i class="knob"></i></label></div></div>
   <label for="t">Температура <span id="tv"></span></label>
   <input id="t" type="range" min="-35" max="40" value="8">
   <label for="w" style="margin-top:10px">Ветер <span id="wv"></span></label>
@@ -301,9 +306,16 @@ function manual(){override=null;status("Расчёт по ползункам");r
 $("t").oninput=manual;$("w").oninput=manual;
 function lock(on){
   $("t").disabled=$("w").disabled=!on;
+  $("rst").disabled=!on;
   document.querySelectorAll("#p button").forEach(b=>b.disabled=!on);
   $("t").closest(".card").classList.toggle("locked",!on);
 }
+function resetManual(){
+  if(!lastLive){status("Реальная погода появится после поиска города");return}
+  apply(lastLive.c,lastLive.loc);
+  $("man").checked=true;lock(true);
+}
+$("rst").onclick=resetManual;
 $("man").onchange=()=>{
   const on=$("man").checked;
   lock(on);
@@ -417,7 +429,10 @@ function tl(d,i){
     let k=prob;
     if(mm>=0.1)k=Math.max(k,0.6);
     if(mm>=1)k=1;
-    return precipColor(Math.min(k,1),t<=0.5)+" "+((h+0.5)/24*100).toFixed(2)+"%";
+    k=Math.min(k,1);
+    const kk=k<0.15?0:k>=0.6?1:(k-0.15)/0.45;
+    const c=precipColor(kk,t<=0.5);
+    return c+" "+((h+0.08)/24*100).toFixed(2)+"%,"+c+" "+((h+0.92)/24*100).toFixed(2)+"%";
   }).join(",");
   const ticks=[0,2,4,6,8,10,12,14,16,18,20,22].map(x=>`<em class="${x%4?"lo":""}" style="left:${(x/24*100).toFixed(2)}%">${hourLbl(x)}</em>`).join("");
   const now=(i===0&&d.nowH!=null)?`<b class="nowm" style="left:${(d.nowH/24*100).toFixed(1)}%"></b>`:"";
