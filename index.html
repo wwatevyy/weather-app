@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Что надеть сегодня</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Unbounded:wght@600&display=swap">
+<style>
+:root{--bg:#f3f5f7;--surface:#fff;--text:#16202a;--muted:#5b6773;--line:#d9dfe5;--tint:hsl(var(--h,200) 65% 90%);--acc:hsl(var(--h,200) 60% 36%);--cb:#1f5fae;--cw:#16795f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10161c;--surface:#1a232c;--text:#eef2f5;--muted:#9aa7b3;--line:#2c3844;--tint:hsl(var(--h,200) 45% 18%);--acc:hsl(var(--h,200) 70% 70%);--cb:#8dbdf5;--cw:#7fd8bd}}
+:root[data-theme="dark"]{--bg:#10161c;--surface:#1a232c;--text:#eef2f5;--muted:#9aa7b3;--line:#2c3844;--tint:hsl(var(--h,200) 45% 18%);--acc:hsl(var(--h,200) 70% 70%);--cb:#8dbdf5;--cw:#7fd8bd}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,var(--tint),var(--bg) 420px) no-repeat,var(--bg);min-height:100vh;color:var(--text);font:400 16px/1.5 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 14px;font-weight:800}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:600 16px Manrope,sans-serif}
+.search button,.choices button{padding:12px 16px;border-radius:10px;border:0;background:hsl(var(--h,200) 55% 34%);color:#fff;font:600 15px Manrope,sans-serif;cursor:pointer}
+.search button:disabled{opacity:.6}
+.choices{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.choices button{text-align:left;background:var(--surface);color:var(--text);border:1px solid var(--line)}
+#status{min-height:22px;margin:8px 2px 12px;font-size:14px;color:var(--muted)}
+.hero{border-radius:20px;padding:22px 20px;color:#fff;background:linear-gradient(135deg,hsl(var(--h,200) 62% 40%),hsl(calc(var(--h,200) + 25) 62% 29%));box-shadow:0 12px 30px -14px hsl(var(--h,200) 70% 30%);transition:background .3s}
+.scene{position:relative;margin:-22px -20px 16px;height:150px;border-radius:20px 20px 0 0;overflow:hidden}
+.scene[hidden]{display:none}
+.scene svg{display:block;width:100%;height:100%}
+.clock{position:absolute;left:12px;bottom:12px;padding:6px 12px;border-radius:999px;background:rgba(8,12,24,.6);color:#fff;font-weight:600;font-size:14px}
+.clock b{font:600 18px Unbounded,Manrope,sans-serif;margin-right:8px}
+.hero .big{font:600 64px/1 Unbounded,Manrope,sans-serif;letter-spacing:-1px}
+.hero .sub{margin-top:8px;opacity:.92}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}
+label{display:flex;justify-content:space-between;font-weight:600;margin-bottom:6px}
+label span{color:var(--muted);font-weight:400}
+input[type=range]{width:100%;height:36px;accent-color:hsl(var(--h,200) 55% 40%)}
+.tg{display:block;flex:none;width:48px;height:28px;position:relative;margin:0;cursor:pointer}
+.sw{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.sw span{color:var(--text);font-weight:600}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw .knob{display:block;position:relative;flex:none;width:48px;height:28px;border-radius:14px;background:var(--line);transition:background .2s}
+.sw .knob::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s}
+.sw input:checked+.knob{background:hsl(var(--h,200) 55% 34%)}
+.sw input:checked+.knob::after{transform:translateX(20px)}
+.sw input:focus-visible+.knob{outline:3px solid hsl(var(--h,200) 70% 55%);outline-offset:2px}
+.locked input[type=range],.locked .chips,.locked label:not(.tg){opacity:.5}
+.chips button:disabled,input[type=range]:disabled{cursor:not-allowed}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{flex:1;min-width:80px;padding:12px 8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:600 15px Manrope,sans-serif;cursor:pointer}
+.chips button[aria-pressed=true]{background:hsl(var(--h,200) 55% 34%);color:#fff;border-color:transparent}
+button:focus-visible,input:focus-visible{outline:3px solid hsl(var(--h,200) 70% 55%);outline-offset:2px}
+h2{font-size:16px;margin:0 0 8px;color:var(--acc)}
+ul{margin:0;padding:0;list-style:none}
+li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+li:last-child{border-bottom:0}
+.em{flex:none;display:flex;gap:8px;color:var(--acc)}
+.em svg{display:block}
+.tip{color:var(--muted);font-size:14px;margin-top:12px}
+.tabs{display:flex;gap:6px;margin:4px 0 14px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.tabs button{flex:1;padding:10px;border:0;border-radius:9px;background:none;color:var(--muted);font:600 15px Manrope,sans-serif;cursor:pointer}
+.tabs button[aria-selected=true]{background:hsl(var(--h,200) 55% 34%);color:#fff}
+.tabs button:focus-visible,.dh:focus-visible{outline:3px solid hsl(var(--h,200) 70% 55%);outline-offset:2px}
+.day{padding:14px 16px}
+.dh{display:grid;grid-template-columns:1fr auto auto;gap:4px 14px;align-items:center;width:100%;text-align:left;background:none;border:0;color:var(--text);font:inherit;padding:0;cursor:pointer}
+.dh small{display:block;color:var(--muted);font-size:13px;font-weight:400}
+.dh b{font-weight:800}
+.dt{text-align:right}
+.dt b{font-size:20px}
+.dm{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;color:var(--muted);font-size:14px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:13px;font-weight:600;background:color-mix(in srgb,currentColor 14%,transparent)}
+.cb{color:var(--cb)}.cw{color:var(--cw)}
+.bar{grid-column:1/-1;position:relative;height:8px;border-radius:4px;background:var(--line)}
+.bar i{position:absolute;top:0;bottom:0;border-radius:4px}
+.day{border-left:6px solid hsl(var(--dh,200) 65% 52%);background:linear-gradient(100deg,hsl(var(--dh,200) 85% 93%),var(--surface) 60%)}
+.today{box-shadow:0 10px 26px -14px hsl(var(--dh,200) 75% 40%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .day{background:linear-gradient(100deg,hsl(var(--dh,200) 45% 22%),var(--surface) 60%)}}
+:root[data-theme="dark"] .day{background:linear-gradient(100deg,hsl(var(--dh,200) 45% 22%),var(--surface) 60%)}
+.di{width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,currentColor 16%,transparent);display:flex;align-items:center;justify-content:center}
+.dd{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.dd p{margin:0 0 4px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Что надеть сегодня</h1>
+<div class="search">
+  <input id="q" type="search" placeholder="Город, например Казань" aria-label="Город" enterkeyhint="search" autocomplete="off">
+  <button id="go" type="button">Найти</button>
+</div>
+<div class="choices" id="sugg" role="listbox"></div>
+<div class="choices" id="choices"></div>
+<div id="status" aria-live="polite"></div>
+
+<div class="tabs" role="tablist">
+  <button id="tb-today" role="tab" aria-selected="true" type="button">Сегодня</button>
+  <button id="tb-fc" role="tab" aria-selected="false" type="button">Прогноз</button>
+</div>
+<div id="p-today" role="tabpanel">
+<section class="hero" aria-live="polite">
+  <div class="scene" id="scene" hidden><svg id="art" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg><div class="clock"><b id="clk"></b><span id="cper"></span></div></div>
+  <div class="big" id="feel">0°</div>
+  <div class="sub" id="verdict"></div>
+</section>
+
+<section class="card">
+  <div class="sw"><span>Выбрать вручную</span><label class="tg"><input type="checkbox" id="man" role="switch" aria-label="Выбрать вручную"><i class="knob"></i></label></div>
+  <label for="t">Температура <span id="tv"></span></label>
+  <input id="t" type="range" min="-35" max="40" value="8">
+  <label for="w" style="margin-top:10px">Ветер <span id="wv"></span></label>
+  <input id="w" type="range" min="0" max="20" value="3">
+  <label style="margin-top:10px">Осадки</label>
+  <div class="chips" id="p">
+    <button data-v="dry" aria-pressed="true">Сухо</button>
+    <button data-v="rain" aria-pressed="false">Дождь</button>
+    <button data-v="snow" aria-pressed="false">Снег</button>
+  </div>
+</section>
+
+<section class="card"><h2>Одежда</h2><ul id="outfit"></ul></section>
+<section class="card"><h2>С собой</h2><ul id="extra"></ul></section>
+<p class="tip">Погода берётся из Open-Meteo, ощущаемая температура уже учитывает ветер и влажность. Чтобы задать погоду самому, включите «Выбрать вручную». Если утром и вечером разница больше 8°, добавьте слой, который легко снять.</p>
+</div>
+<div id="p-fc" role="tabpanel" hidden><div id="fclist"></div></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const SERVER="AccuWeather®";
+let precip="dry", override=null, mcp=null;
+
+const bands=[
+ [-25,"Очень холодно",["Термобельё и флисовый слой","Тёплые штаны или термобрюки","Пуховик или длинная парка","Шапка, закрывающая уши, шарф, тёплые варежки","Зимние ботинки с толстым носком"]],
+ [-15,"Сильный мороз",["Термобельё","Свитер или флис","Зимняя куртка или пуховик","Шапка, шарф, перчатки","Утеплённая обувь"]],
+ [-5,"Морозно",["Футболка с длинным рукавом и свитер","Зимняя куртка","Шапка и перчатки","Тёплые ботинки"]],
+ [3,"Холодно",["Свитер или худи","Утеплённая куртка или тёплое пальто","Лёгкая шапка и шарф","Закрытая обувь"]],
+ [10,"Прохладно",["Рубашка или лонгслив","Кофта или лёгкий свитер","Куртка или плащ","Закрытая обувь"]],
+ [16,"Свежо",["Футболка и тонкая кофта","Лёгкая куртка или джинсовка","Джинсы или брюки","Кроссовки"]],
+ [22,"Комфортно",["Футболка или рубашка","Лёгкие брюки или джинсы","Кроссовки или лоферы","Тонкая кофта на вечер"]],
+ [28,"Тепло",["Лёгкая футболка","Шорты или тонкие брюки","Дышащая обувь","Кепка или очки от солнца"]],
+ [99,"Жарко",["Свободная светлая одежда из хлопка или льна","Шорты или лёгкое платье","Открытая обувь","Головной убор и солнцезащитный крем"]]
+];
+function feels(t,ms){
+  const v=ms*3.6;
+  if(t<=10&&v>4.8){const p=Math.pow(v,0.16);return 13.12+0.6215*t-11.37*p+0.3965*t*p}
+  return t;
+}
+const IC={
+ tee:"M8 3 L3 6.5 L5 10.5 L8 9.5 V20.5 H16 V9.5 L19 10.5 L21 6.5 L16 3 Q12 6 8 3 Z",
+ sweater:"M9 3 Q12 5.5 15 3 L20.5 6.5 L21 17 L17.5 17.5 L17 10 V21 H7 V10 L6.5 17.5 L3 17 L3.5 6.5 Z M7 18 H17",
+ shirt:"M9 3 L3.5 6.5 L5 11 L7.5 10 V21 H16.5 V10 L19 11 L20.5 6.5 L15 3 L12 7 Z M12 7 V21",
+ jacket:"M9 3 L3.5 6.5 L3 18 L6.5 18.5 L7 10 V21 H17 V10 L17.5 18.5 L21 18 L20.5 6.5 L15 3 L12 6.5 Z M12 6.5 V21",
+ pants:"M7 3 H17 L18 21 H13.5 L12 9.5 L10.5 21 H6 Z M7 6.5 H17.2",
+ shorts:"M6 5 H18 L19 17 H13.5 L12 10.5 L10.5 17 H5 Z",
+ dress:"M9 3 L8.5 8 L5 21 H19 L15.5 8 L15 3 M8.5 8 H15.5",
+ beanie:"M5.5 14 C5.5 8 8 5.5 12 5.5 C16 5.5 18.5 8 18.5 14 M4 14 H20 V18 H4 Z M10.8 3.2 a1.2 1.2 0 1 0 2.4 0 a1.2 1.2 0 1 0 -2.4 0",
+ hat:"M7 13 C7 8 9 6 12 6 C15 6 17 8 17 13 M2.5 13.5 C2.5 15.5 7 16.5 12 16.5 C17 16.5 21.5 15.5 21.5 13.5 C21.5 12 17 13 12 13 C7 13 2.5 12 2.5 13.5 Z",
+ scarf:"M4.5 6 C8 10 16 10 19.5 6 V10.5 C16 14.5 8 14.5 4.5 10.5 Z M14 13 V20.5 H18 V12.5",
+ mitten:"M8 21 V10 C8 7.5 9.5 6 12 6 C14.5 6 16 7.5 16 10 V21 Z M8 17.5 H16 M8 12 L5.5 10.5 C4.5 10 4 11 4.5 12.5 L8 15.5",
+ boot:"M8 3 H14 V11 L19.5 14.5 V19.5 H7 Z M8 7 H14",
+ shoe:"M3 17 V12.5 L8 10.5 L10 13 L15 13.5 C18.5 14 21 15.5 21 17 Z M3 19.5 H21",
+ glasses:"M2.5 10 H21.5 M4 10 H10.5 V13.5 C10.5 15 9.5 16 8 16 H6.5 C5 16 4 15 4 13.5 Z M13.5 10 H20 V13.5 C20 15 19 16 17.5 16 H16 C14.5 16 13.5 15 13.5 13.5 Z",
+ umbrella:"M3 12 C3 7.5 7 4 12 4 C17 4 21 7.5 21 12 C19.5 11 18 11 16.5 12 C15 11 13.5 11 12 12 C10.5 11 9 11 7.5 12 C6 11 4.5 11 3 12 Z M12 12 V19 C12 20.5 10 20.5 10 19",
+ bottle:"M10 3 H14 V6 L16 8 V20 C16 21 15.5 21.5 15 21.5 H9 C8.5 21.5 8 21 8 20 V8 L10 6 Z M8 12 H16",
+ tube:"M9 3 H15 V6 H9 Z M7 6 H17 V20 C17 21 16.5 21.5 16 21.5 H8 C7.5 21.5 7 21 7 20 Z M12 10.5 a2.5 2.5 0 1 0 0 5 a2.5 2.5 0 1 0 0 -5",
+ sock:"M8 3 H15 V12 L19 15.5 C20 17 19.5 19.5 17.5 20 C16 20.5 14.5 19.5 13 18 L9 14 C8 13 8 12 8 11 Z M8 6.5 H15",
+ drop:"M12 3 C12 3 5.5 10.5 5.5 14.5 C5.5 18 8.4 21 12 21 C15.6 21 18.5 18 18.5 14.5 C18.5 10.5 12 3 12 3 Z",
+ snow:"M12 3 V21 M4.2 7.5 L19.8 16.5 M19.8 7.5 L4.2 16.5",
+ wind:"M3 9 H14 C16 9 17 7.5 17 6.5 C17 5 15.5 4 14.5 4.5 M3 13 H18 C20 13 21 14.5 21 15.5 C21 17 19.5 18 18 17.5 M3 17 H9",
+ flame:"M12 3 C13 7 17 9 17 14 C17 17.5 14.8 20 12 20 C9.2 20 7 17.5 7 14 C7 11.5 8.5 10.5 9.5 9 C10 11 11 11.5 11.5 11.5 C11.5 8 11 6 12 3 Z",
+ sun:"M12 8 a4 4 0 1 0 0 8 a4 4 0 1 0 0 -8 M12 2 V4 M12 20 V22 M2 12 H4 M20 12 H22 M4.9 4.9 L6.3 6.3 M17.7 17.7 L19.1 19.1 M4.9 19.1 L6.3 17.7 M17.7 6.3 L19.1 4.9",
+ hanger:"M12 8 C13.5 8 14.5 7 14.5 5.8 C14.5 4.6 13.5 3.8 12.3 3.8 C11.1 3.8 10.3 4.6 10.3 5.6 M12 8 V10.5 L3.5 17 C3 17.5 3.3 18.5 4 18.5 H20 C20.7 18.5 21 17.5 20.5 17 L12 10.5"
+};
+const RULES=[
+ [/не нужен/,"sun",true],
+ [/термобел/,"flame"],[/флис|свитер|кофт|худи|лонгслив/,"sweater"],[/футболк|одежд/,"tee"],[/рубашк/,"shirt"],
+ [/пуховик|парка|куртк|пальто|плащ|ветровк|джинсовк/,"jacket"],
+ [/штаны|брюки|брюк|джинс|термобрюк/,"pants"],[/шорты/,"shorts"],[/платье/,"dress"],
+ [/шапк/,"beanie"],[/кепк|головной убор/,"hat"],[/шарф/,"scarf"],[/перчатк|варежк/,"mitten"],
+ [/ботинк/,"boot"],[/обувь|кроссовк|лофер/,"shoe"],
+ [/очки/,"glasses"],[/крем/,"tube"],[/бутылк|воды/,"bottle"],[/зонт/,"umbrella"],[/носк/,"sock"],
+ [/непромокаем/,"drop"],[/снег/,"snow"],[/ветер|шею/,"wind"]
+];
+function icons(t){
+  const n=t.toLowerCase().replace(/ё/g,"е");
+  const out=[];
+  for(const [re,name,only] of RULES){
+    if(re.test(n)){if(only){out.length=0;out.push(name);break}if(!out.includes(name))out.push(name)}
+  }
+  if(!out.length)out.push("hanger");
+  return out.slice(0,3).map(k=>`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${IC[k]}"/></svg>`).join("");
+}
+function li(t){return `<li><span>${t}</span><span class="em" aria-hidden="true">${icons(t)}</span></li>`}
+function render(){
+  const t=+$("t").value, w=+$("w").value;
+  const f=Math.round(override!==null?override:feels(t,w));
+  $("tv").textContent=t+"°";
+  $("wv").textContent=w+" м/с";
+  $("feel").textContent=(f>0?"+":"")+f+"°";
+  const b=bands.find(x=>f<=x[0]);
+  $("verdict").textContent=b[1]+(f!==t?" · на термометре "+(t>0?"+":"")+t+"°":"");
+  const hue=Math.max(0,Math.min(1,(f+30)/65));
+  document.documentElement.style.setProperty("--h",Math.round(215-hue*185));
+  const items=[...b[2]];
+  if(w>=8&&f>5)items.push("Ветровка или куртка с капюшоном");
+  $("outfit").innerHTML=items.map(li).join("");
+  const ex=[];
+  if(precip==="rain"){ex.push("Зонт или дождевик","Непромокаемая обувь, сменные носки в офис")}
+  if(precip==="snow"){ex.push("Обувь с нескользящей подошвой","Капюшон или шапка: снег тает на волосах")}
+  if(precip==="dry"&&f>=24)ex.push("Бутылка воды","Солнцезащитный крем");
+  if(precip==="dry"&&f<24)ex.push("Зонт не нужен");
+  if(w>=10)ex.push("Сильный ветер: закройте шею и уши");
+  $("extra").innerHTML=ex.map(li).join("");
+}
+let place=null,curPeriod="";
+const PERIODS={morning:"Утро",day:"День",evening:"Вечер",night:"Ночь"};
+const SKY={morning:["#79b7f2","#ffd8a8"],day:["#2f80d8","#b8e0ff"],evening:["#2b2160","#ff9a62"],night:["#080d26","#1f2f66"]};
+const BLD={morning:"#46567a",day:"#35567a",evening:"#231a45",night:"#090e22"};
+const CITY=[[0,38,54],[38,30,78],[68,26,46],[94,34,90],[128,28,62],[156,36,50],[192,24,84],[216,32,58],[248,30,96],[278,26,64],[304,34,48],[338,28,76],[366,34,56]];
+function cloud(x,y,s,f,o){return `<g transform="translate(${x} ${y}) scale(${s})" fill="${f}" opacity="${o}"><ellipse cx="30" cy="20" rx="30" ry="12"/><ellipse cx="52" cy="14" rx="22" ry="12"/><ellipse cx="16" cy="16" rx="16" ry="10"/></g>`}
+function sun(x,y,r,f){return `<circle cx="${x}" cy="${y}" r="${r*3}" fill="url(#glow)" opacity=".6"/><circle cx="${x}" cy="${y}" r="${r}" fill="${f}"/>`}
+function sceneSVG(p){
+  const [a,b]=SKY[p];
+  let s=`<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient><radialGradient id="glow"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="400" height="150" fill="url(#sky)"/>`;
+  if(p==="night"){
+    [[30,20],[70,52],[120,16],[160,40],[210,24],[250,58],[340,18],[372,50],[190,66],[54,84]].forEach(([x,y],i)=>{s+=`<circle cx="${x}" cy="${y}" r="${i%3?1:1.6}" fill="#fff" opacity=".85"/>`});
+    s+=`<circle cx="300" cy="44" r="44" fill="url(#glow)" opacity=".35"/><path d="M300 28A16 16 0 1 0 300 60A22 22 0 0 0 300 28Z" fill="#f4f1d8"/>`;
+  }else if(p==="morning"){
+    s+=sun(290,98,20,"#ffcf70")+cloud(40,36,1,"#fff",.55)+cloud(210,58,.8,"#fff",.45);
+  }else if(p==="day"){
+    s+=sun(300,38,18,"#fff3b0")+cloud(50,30,1.1,"#fff",.9)+cloud(200,64,.9,"#fff",.85)+cloud(330,70,.7,"#fff",.8);
+  }else{
+    s+=sun(110,106,24,"#ffb347")+cloud(40,40,1,"#ff9ab0",.5)+cloud(250,28,1,"#ffb7a0",.45);
+  }
+  if(precip!=="dry"){
+    s+=cloud(20,18,1.5,"#4b5568",.9)+cloud(160,8,1.7,"#566074",.9)+cloud(290,20,1.4,"#4b5568",.85);
+    for(let i=0;i<26;i++){
+      const x=(i*17+7)%400,y=(i*29)%90+40;
+      s+=precip==="rain"?`<line x1="${x}" y1="${y}" x2="${x-5}" y2="${y+12}" stroke="#cfe6ff" stroke-width="1.6" opacity=".7"/>`:`<circle cx="${x}" cy="${y}" r="2" fill="#fff" opacity=".9"/>`;
+    }
+  }
+  CITY.forEach(([x,w,h])=>{
+    s+=`<rect x="${x}" y="${150-h}" width="${w}" height="${h}" fill="${BLD[p]}"/>`;
+    if(p==="night"||p==="evening"){
+      for(let wy=150-h+8;wy<140;wy+=12)for(let wx=x+6;wx<x+w-6;wx+=9){
+        if(((wx*7+wy*3)%5)<(p==="night"?3:2))s+=`<rect x="${wx}" y="${wy}" width="4" height="5" fill="#ffd36b" opacity="${p==="night"?.9:.65}"/>`;
+      }
+    }
+  });
+  return s;
+}
+function localParts(){
+  const d=new Date();
+  try{
+    const h=parseInt(new Intl.DateTimeFormat("en-GB",{timeZone:place.tz,hour:"numeric",hour12:false}).format(d),10)%24;
+    const time=new Intl.DateTimeFormat("ru-RU",{timeZone:place.tz,hour:"2-digit",minute:"2-digit",hour12:false}).format(d);
+    return {h,time};
+  }catch(e){
+    const m=/^(\d{1,2}):(\d{2})/.exec(place.fallback||"");
+    return m?{h:+m[1],time:m[0]}:null;
+  }
+}
+function periodOf(h){return h>=6&&h<11?"morning":h>=11&&h<17?"day":h>=17&&h<22?"evening":"night"}
+function drawScene(){
+  const box=$("scene");
+  const lp=place&&localParts();
+  if(!lp){box.hidden=true;return}
+  curPeriod=periodOf(lp.h);
+  $("art").innerHTML=sceneSVG(curPeriod);
+  $("clk").textContent=lp.time;
+  $("cper").textContent=PERIODS[curPeriod];
+  box.hidden=false;
+}
+function tick(){
+  const lp=place&&localParts();
+  if(!lp)return;
+  $("clk").textContent=lp.time;
+  if(periodOf(lp.h)!==curPeriod)drawScene();
+}
+setInterval(tick,1000);
+function setPrecip(v){setTimeout(drawScene,0);
+  precip=v;
+  document.querySelectorAll("#p button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===v));
+}
+function manual(){override=null;status("Расчёт по ползункам");render()}
+$("t").oninput=manual;$("w").oninput=manual;
+function lock(on){
+  $("t").disabled=$("w").disabled=!on;
+  document.querySelectorAll("#p button").forEach(b=>b.disabled=!on);
+  $("t").closest(".card").classList.toggle("locked",!on);
+}
+$("man").onchange=()=>{
+  const on=$("man").checked;
+  lock(on);
+  if(on){override=null;status("Расчёт по ползункам");render()}
+  else if(lastLive)apply(lastLive.c,lastLive.loc);
+  else render();
+};
+lock(false);
+document.querySelectorAll("#p button").forEach(btn=>btn.onclick=()=>{setPrecip(btn.dataset.v);render()});
+
+function status(msg){$("status").textContent=msg||""}
+function busy(b){$("go").disabled=b}
+function data(r){
+  let p=r&&r.payload;
+  if(typeof p==="string"){try{p=JSON.parse(p)}catch(e){p=null}}
+  return p;
+}
+function fail(e){
+  const c=e&&e.code;
+  if(c==="server_not_connected"||c==="needs_reauth")status("Подключите AccuWeather в настройках Claude: Коннекторы. Пока можно ввести погоду вручную.");
+  else if(c==="not_in_manifest"||c==="approval_required"||c==="consent_required")status("Нужно разрешить странице доступ к AccuWeather. Нажмите «Найти» ещё раз и подтвердите.");
+  else if(c==="selection_required")status("У вас несколько коннекторов AccuWeather: выберите один в настройках.");
+  else if(c==="server_unavailable"||c==="upstream_error")status("Сервис погоды не ответил. Попробуйте ещё раз через минуту.");
+  else if(c==="tool_error")status("Сервис погоды вернул ошибку для этого запроса.");
+  else status("Не удалось получить погоду. Можно ввести её вручную.");
+}
+let lastLive=null;
+function apply(c,loc){lastLive={c,loc};$("man").checked=false;lock(false);
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const t=Math.round(c.temperatureValue);
+  const ms=Math.round((c.windSpeedImperial||0)*0.44704);
+  $("t").value=clamp(t,-35,40);
+  $("w").value=clamp(ms,0,20);
+  const mm=parseFloat(String(c.extended&&c.extended.precipitation||"0").replace(",","."))||0;
+  const ic=c.iconCode;
+  const snowy=(ic>=19&&ic<=26)||ic===29||ic===43||ic===44;
+  const rainy=(ic>=12&&ic<=18)||(ic>=39&&ic<=42)||mm>0;
+  setPrecip(snowy?"snow":rainy?(t<=0?"snow":"rain"):"dry");
+  override=typeof c.realFeelValue==="number"?c.realFeelValue:null;
+  place={tz:(loc&&loc.timeZoneName)||"",fallback:(loc&&loc.localTime)||""};
+  const name=(loc&&loc.info&&loc.info.name)||(loc&&loc.localizedName)||"";
+  status([name,c.phrase,c.now?"обновлено "+c.now:""].filter(Boolean).join(" · "));
+  render();
+}
+let curKey=null,fcKey=null,tab="today";
+const W={
+ cloud:"M7 18 H17.5 C20 18 21.5 16.2 21.5 14 C21.5 11.8 19.8 10.2 17.8 10.2 C17.3 7.5 15 5.5 12.3 5.5 C9.3 5.5 7 7.8 6.8 10.6 C4.6 10.8 3 12.4 3 14.5 C3 16.5 4.7 18 7 18 Z",
+ pcloud:"M8 4.5 a2.8 2.8 0 1 0 0 5.6 a2.8 2.8 0 1 0 0 -5.6 M8 2 V3 M3.5 7 H2.5 M4.8 3.8 L4.1 3.1 M11.2 3.8 L11.9 3.1 M8 20 H17 C19.5 20 21 18.5 21 16.5 C21 14.6 19.5 13.2 17.7 13.2 C17.3 11 15.5 9.5 13.3 9.5 C11 9.5 9.2 11.2 9 13.4 C7.2 13.6 6 15 6 16.7 C6 18.5 7.2 20 8 20 Z",
+ rain:"M7 14 H17.5 C19.8 14 21 12.5 21 10.8 C21 9 19.6 7.7 17.9 7.7 C17.4 5.5 15.5 4 13.2 4 C10.7 4 8.8 5.8 8.6 8.1 C6.7 8.3 5.5 9.6 5.5 11.3 C5.5 12.8 6.4 14 7 14 Z M8 17 L7 20 M12 17 L11 20 M16 17 L15 20",
+ storm:"M7 14 H17.5 C19.8 14 21 12.5 21 10.8 C21 9 19.6 7.7 17.9 7.7 C17.4 5.5 15.5 4 13.2 4 C10.7 4 8.8 5.8 8.6 8.1 C6.7 8.3 5.5 9.6 5.5 11.3 C5.5 12.8 6.4 14 7 14 Z M12.5 14.5 L10.5 18 H13.5 L11.5 21.5",
+ fog:"M4 8 H20 M3 12 H21 M5 16 H19 M8 20 H16"
+};
+function wIcon(c){
+  if([1,2,5,30].includes(c))return IC.sun;
+  if([3,4].includes(c))return W.pcloud;
+  if(c===11)return W.fog;
+  if([12,13,14,18,39,40].includes(c))return W.rain;
+  if([15,16,17,41,42].includes(c))return W.storm;
+  if((c>=19&&c<=26)||c===29||c===43||c===44)return IC.snow;
+  return W.cloud;
+}
+const svgI=(d,n)=>`<svg viewBox="0 0 24 24" width="${n}" height="${n}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+const fmt=v=>(Math.round(v)>0?"+":"")+Math.round(v)+"°";
+function windMs(str){const m=/(\d+)/.exec(str||"");return m?+m[1]/3.6:0}
+function windText(str){const m=/^(\S+)\s+(\d+)/.exec(str||"");return m?m[1]+" "+Math.round(+m[2]/3.6)+" м/с":""}
+function dayAdvice(d){
+  const f=Math.round(d.day.realFeelValue), nf=Math.round(d.night.realFeelValue);
+  const b=bands.find(x=>f<=x[0]);
+  const items=b[2].slice(0,4);
+  const rain=d.day.rainProbabilityValue||0, snow=d.day.snowProbabilityValue||0;
+  if(windMs(d.day.extended&&d.day.extended.wind)>=8&&f>5)items.push("Ветровка или куртка с капюшоном");
+  if(snow>=30)items.push("Обувь с нескользящей подошвой");
+  else if(rain>=40)items.push("Зонт или дождевик");
+  if(f-nf>=8)items.push("Вечером заметно холоднее: возьмите лишний слой");
+  return `<p>${b[1]}: днём ощущается как ${fmt(f)}, ночью как ${fmt(nf)}</p><ul>`+items.map(li).join("")+"</ul>";
+}
+const hueOf=t=>Math.round(215-Math.max(0,Math.min(1,(t+30)/65))*185);
+const wColor=c=>[1,2,5,30].includes(c)?"#f2a30f":[3,4].includes(c)?"#e39a2d":c===11?"#8b99a8":[12,13,14,18,39,40].includes(c)?"#3b82d6":[15,16,17,41,42].includes(c)?"#7b5cd6":((c>=19&&c<=26)||c===29||c===43||c===44)?"#4fb3d9":"#7d8ea3";
+function renderFc(arr){
+  const lo=Math.min(...arr.map(d=>d.night.temperature)),hi=Math.max(...arr.map(d=>d.day.temperature)),span=Math.max(hi-lo,1);
+  $("fclist").innerHTML=arr.map((d,i)=>{
+    const x=d.day.extended||{};
+    const pr=Math.max(d.day.rainProbabilityValue||0,d.day.snowProbabilityValue||0);
+    const name=i===0?"Сегодня":i===1?"Завтра":d.dayOfWeek;
+    const tn=d.night.temperature,td=d.day.temperature;
+    const width=Math.max((td-tn)/span*100,10);
+    const left=Math.min((tn-lo)/span*100,100-width);
+    const wt=windText(x.wind);
+    return `<div class="card day${i===0?" today":""}" style="--dh:${hueOf(d.day.realFeelValue)}"><button class="dh" type="button" aria-expanded="false"><span class="dl"><b>${name}</b><small>${d.dayOfWeek}, ${d.displayDate}</small></span><span class="di" style="color:${wColor(d.day.icon)}" aria-hidden="true">${svgI(wIcon(d.day.icon),28)}</span><span class="dt"><b>${fmt(td)}</b><small>${fmt(tn)} ночью</small></span><span class="bar" aria-hidden="true"><i style="left:${left.toFixed(1)}%;width:${width.toFixed(1)}%;background:linear-gradient(90deg,hsl(${hueOf(tn)} 75% 52%),hsl(${hueOf(td)} 75% 52%))"></i></span><span class="dm"><span>${d.day.phrase}</span><span class="chip cb">${svgI(IC.drop,13)}${pr}%</span>${wt?`<span class="chip cw">${svgI(IC.wind,13)}${wt}</span>`:""}</span></button><div class="dd" hidden>${dayAdvice(d)}</div></div>`;
+  }).join("");
+  document.querySelectorAll("#fclist .dh").forEach(b=>b.onclick=()=>{
+    const dd=b.nextElementSibling,open=dd.hidden;
+    dd.hidden=!open;b.setAttribute("aria-expanded",open);
+  });
+}
+let fcData=null;
+function loadFc(){
+  const box=$("fclist");
+  if(!fcData){box.innerHTML='<p class="tip">Найдите город на вкладке «Сегодня», и здесь появится прогноз.</p>';return}
+  renderFc(fcData);
+}
+function showTab(n){
+  tab=n;
+  $("p-today").hidden=n!=="today";$("p-fc").hidden=n!=="fc";
+  $("tb-today").setAttribute("aria-selected",n==="today");
+  $("tb-fc").setAttribute("aria-selected",n==="fc");
+  if(n==="fc")loadFc();
+}
+$("tb-today").onclick=()=>showTab("today");
+$("tb-fc").onclick=()=>showTab("fc");
+const GEO="https://geocoding-api.open-meteo.com/v1/search";
+const API="https://api.open-meteo.com/v1/forecast";
+const WMO={0:["Ясно",1],1:["Преимущественно ясно",2],2:["Переменная облачность",3],3:["Пасмурно",7],45:["Туман",11],48:["Изморозь",11],51:["Морось",12],53:["Морось",12],55:["Сильная морось",12],56:["Ледяная морось",25],57:["Ледяная морось",25],61:["Небольшой дождь",12],63:["Дождь",18],65:["Сильный дождь",18],66:["Ледяной дождь",26],67:["Ледяной дождь",26],71:["Небольшой снег",22],73:["Снег",22],75:["Сильный снег",22],77:["Снежная крупа",22],80:["Ливни",12],81:["Ливни",18],82:["Сильные ливни",18],85:["Снегопад",22],86:["Сильный снегопад",22],95:["Гроза",15],96:["Гроза с градом",16],99:["Гроза с градом",16]};
+const wmo=c=>WMO[c]||["Облачно",7];
+const DIRS=["С","СВ","В","ЮВ","Ю","ЮЗ","З","СЗ"];
+const dirOf=d=>DIRS[Math.round(d/45)%8];
+async function getJson(url){
+  const r=await fetch(url);
+  if(!r.ok)throw {code:"upstream_error"};
+  return r.json();
+}
+function buildFc(d){
+  const q=d.daily;
+  fcData=q.time.map((t,i)=>{
+    const [ph,ic]=wmo(q.weather_code[i]);
+    const p=q.precipitation_probability_max[i]||0;
+    const snowy=ic>=19&&ic<=26;
+    return {
+      dayOfWeek:new Date(t+"T12:00:00").toLocaleDateString("ru-RU",{weekday:"short"}),
+      displayDate:t.slice(8,10)+"."+t.slice(5,7),
+      day:{temperature:q.temperature_2m_max[i],realFeelValue:q.apparent_temperature_max[i],icon:ic,phrase:ph,
+        rainProbabilityValue:snowy?0:p,snowProbabilityValue:snowy?p:0,
+        extended:{wind:dirOf(q.wind_direction_10m_dominant[i])+" "+Math.round(q.wind_speed_10m_max[i]*3.6)+" км/ч"}},
+      night:{temperature:q.temperature_2m_min[i],realFeelValue:q.apparent_temperature_min[i]}
+    };
+  });
+}
+async function load(item,query){
+  $("choices").innerHTML="";
+  status("Загружаю погоду…");
+  try{
+    const d=await getJson(API+"?latitude="+item.lat+"&longitude="+item.lon+"&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant&wind_speed_unit=ms&timezone=auto&forecast_days=10");
+    const cu=d.current,[phrase,icon]=wmo(cu.weather_code),hm=cu.time.slice(11,16);
+    apply({temperatureValue:cu.temperature_2m,windSpeedImperial:cu.wind_speed_10m/0.44704,extended:{precipitation:String(cu.precipitation)},iconCode:icon,realFeelValue:cu.apparent_temperature,phrase,now:hm},
+      {info:{name:item.name},timeZoneName:d.timezone||item.tz,localTime:hm});
+    buildFc(d);
+    if(tab==="fc")loadFc();
+    try{localStorage.setItem("city",query)}catch(e){}
+  }catch(e){fail(e)}
+}
+async function find(q){
+  q=(q||"").trim();
+  if(!q)return;
+  busy(true);status("Ищу город…");$("choices").innerHTML="";
+  try{
+    const d=await getJson(GEO+"?name="+encodeURIComponent(q)+"&count=5&language=ru&format=json");
+    const list=(d.results||[]).map(r=>({name:[r.name,r.admin1,r.country].filter(Boolean).join(", "),lat:r.latitude,lon:r.longitude,tz:r.timezone}));
+    if(!list.length){status("Город не найден. Попробуйте другое название.");return}
+    await load(list[0],q);
+    if(list.length>1){
+      const p=document.createElement("p");p.className="tip";p.style.margin="0";p.textContent="Не тот город?";
+      $("choices").appendChild(p);
+      list.slice(1).forEach(it=>{
+        const b=document.createElement("button");
+        b.type="button";b.textContent=it.name;
+        b.onclick=()=>load(it,q);
+        $("choices").appendChild(b);
+      });
+    }
+  }catch(e){fail(e)}
+  finally{busy(false)}
+}
+$("go").onclick=()=>{hideSugg();find($("q").value)};
+const CITIES="Москва,Санкт-Петербург,Новосибирск,Екатеринбург,Казань,Нижний Новгород,Челябинск,Самара,Омск,Ростов-на-Дону,Уфа,Красноярск,Воронеж,Пермь,Волгоград,Краснодар,Саратов,Тюмень,Тольятти,Ижевск,Барнаул,Ульяновск,Иркутск,Хабаровск,Ярославль,Владивосток,Махачкала,Томск,Оренбург,Кемерово,Новокузнецк,Рязань,Астрахань,Набережные Челны,Пенза,Киров,Липецк,Чебоксары,Тула,Калининград,Курск,Севастополь,Сочи,Ставрополь,Улан-Удэ,Тверь,Магнитогорск,Иваново,Брянск,Белгород,Сургут,Владимир,Архангельск,Чита,Калуга,Смоленск,Волжский,Курган,Орёл,Череповец,Вологда,Владикавказ,Мурманск,Саранск,Якутск,Тамбов,Петрозаводск,Кострома,Нижневартовск,Новороссийск,Йошкар-Ола,Химки,Таганрог,Сыктывкар,Нальчик,Шахты,Дзержинск,Орск,Братск,Ангарск,Благовещенск,Великий Новгород,Псков,Бийск,Балашиха,Рыбинск,Южно-Сахалинск,Петропавловск-Камчатский,Анапа,Геленджик,Ялта,Симферополь,Абакан,Норильск,Магадан,Салехард,Ханты-Мансийск,Минск,Киев,Алматы,Астана,Ташкент,Баку,Ереван,Тбилиси,Батуми,Бишкек,Душанбе,Кишинёв,Рига,Вильнюс,Таллин,Лондон,Париж,Берлин,Рим,Мадрид,Барселона,Милан,Венеция,Флоренция,Неаполь,Торино,Амстердам,Брюссель,Вена,Прага,Варшава,Будапешт,Стокгольм,Осло,Хельсинки,Копенгаген,Афины,Белград,Лиссабон,Женева,Цюрих,Дублин,Эдинбург,Стамбул,Анталья,Дубай,Абу-Даби,Доха,Тель-Авив,Каир,Шарм-эль-Шейх,Хургада,Нью-Йорк,Лос-Анджелес,Чикаго,Майами,Сан-Франциско,Вашингтон,Торонто,Монреаль,Ванкувер,Мехико,Рио-де-Жанейро,Буэнос-Айрес,Токио,Осака,Сеул,Пекин,Шанхай,Гонконг,Сингапур,Бангкок,Пхукет,Бали,Дели,Мумбаи,Сидней,Мельбурн,Лион,Ницца,Марсель,Тулуза,Мюнхен,Гамбург,Франкфурт,Кёльн,Дюссельдорф,Штутгарт,Лейпциг,Дрезден,Зальцбург,Краков,Гданьск,Вроцлав,Братислава,Любляна,Загреб,Сплит,Дубровник,Будва,Подгорица,Сараево,Скопье,София,Бухарест,Варна,Тирана,Валлетта,Никосия,Лимасол,Ларнака,Пафос,Порту,Севилья,Валенсия,Малага,Гётеборг,Берген,Рейкьявик,Анкара,Измир,Бодрум,Мармарис,Аланья,Кемер,Белек,Бейрут,Амман,Дамаск,Багдад,Тегеран,Эр-Рияд,Джидда,Кувейт,Маскат,Касабланка,Марракеш,Тунис,Алжир,Найроби,Аддис-Абеба,Кейптаун,Йоханнесбург,Занзибар,Лагос,Кабул,Исламабад,Карачи,Лахор,Катманду,Коломбо,Мале,Ханой,Хошимин,Нячанг,Дананг,Куала-Лумпур,Джакарта,Манила,Тайбэй,Гуанчжоу,Шэньчжэнь,Чэнду,Сиань,Харбин,Саппоро,Киото,Нагоя,Пусан,Улан-Батор,Бостон,Сиэтл,Лас-Вегас,Орландо,Даллас,Хьюстон,Атланта,Денвер,Филадельфия,Сан-Диего,Гонолулу,Оттава,Калгари,Канкун,Гавана,Богота,Лима,Сантьяго,Монтевидео,Сан-Паулу,Бразилиа,Каракас,Кито,Панама,Брисбен,Перт,Аделаида,Окленд,Веллингтон".split(",");
+const norm=s=>s.toLowerCase().replace(/ё/g,"е");
+function hideSugg(){$("sugg").innerHTML=""}
+function showSugg(){
+  const v=norm($("q").value.trim());
+  hideSugg();
+  if(v.length<2)return;
+  const hits=[],RU=CITIES.indexOf("Ханты-Мансийск");
+  for(const c of CITIES){
+    const n=norm(c);
+    const r=CITIES.indexOf(c)<=RU?0:1;
+    if(n.startsWith(v))hits.push([0,c,r]);
+    else if(n.split(/[\s-]+/).some(w=>w.startsWith(v)))hits.push([1,c,r]);
+  }
+  hits.sort((a,b)=>a[0]-b[0]);
+  const pick=[...hits.filter(h=>h[2]===0).slice(0,4),...hits.filter(h=>h[2]===1).slice(0,4)].sort((a,b)=>a[0]-b[0]||a[2]-b[2]);
+  pick.forEach(([,c])=>{
+    const b=document.createElement("button");
+    b.type="button";b.textContent=c;
+    b.onmousedown=e=>e.preventDefault();
+    b.onclick=()=>{$("q").value=c;hideSugg();find(c)};
+    $("sugg").appendChild(b);
+  });
+}
+$("q").addEventListener("input",showSugg);
+$("q").addEventListener("blur",()=>setTimeout(hideSugg,150));
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter"){hideSugg();find($("q").value)}});
+
+render();
+(function(){
+  const tg=window.Telegram&&window.Telegram.WebApp;
+  if(tg){try{tg.ready();tg.expand()}catch(e){}}
+  let saved="";try{saved=localStorage.getItem("city")||""}catch(e){}
+  if(saved){$("q").value=saved;find(saved)}else status("Введите город или включите ручной режим.");
+})();
+</script>
+</body>
+</html>
