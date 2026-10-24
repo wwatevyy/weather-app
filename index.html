@@ -31,6 +31,8 @@ h1{font-size:20px;margin:8px 0 14px;font-weight:800}
 .clock b{font:600 18px Unbounded,Manrope,sans-serif;margin-right:8px}
 .hero .big{font:600 64px/1 Unbounded,Manrope,sans-serif;letter-spacing:-1px}
 .hero .sub{margin-top:8px;opacity:.92}
+.hero .lbl{font-size:14px;opacity:.9;margin-bottom:6px}
+.tip a{color:var(--acc)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:12px}
 label{display:flex;justify-content:space-between;font-weight:600;margin-bottom:6px}
 label span{color:var(--muted);font-weight:400}
@@ -120,6 +122,7 @@ li:last-child{border-bottom:0}
 <div id="p-today" role="tabpanel">
 <section class="hero" aria-live="polite">
   <div class="scene" id="scene" hidden><svg id="art" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg><div class="clock"><b id="clk"></b><span id="cper"></span></div></div>
+  <div class="lbl">Ощущается как</div>
   <div class="big" id="feel">0°</div>
   <div class="sub" id="verdict"></div>
 </section>
@@ -140,7 +143,7 @@ li:last-child{border-bottom:0}
 
 <section class="card"><h2>Одежда</h2><ul id="outfit"></ul></section>
 <section class="card"><h2>С собой</h2><ul id="extra"></ul></section>
-<p class="tip">Погода берётся из Open-Meteo, ощущаемая температура уже учитывает ветер и влажность. Чтобы задать погоду самому, включите «Выбрать вручную». Если утром и вечером разница больше 8°, добавьте слой, который легко снять.</p>
+<p class="tip">Погода берётся из <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a>, ощущаемая температура уже учитывает ветер и влажность. Чтобы задать погоду самому, включите «Выбрать вручную». Если утром и вечером разница больше 8°, добавьте слой, который легко снять.</p>
 </div>
 <div id="p-fc" role="tabpanel" hidden><div id="fclist"></div></div>
 </main>
@@ -218,7 +221,7 @@ function render(){
   $("wv").textContent=w+" м/с";
   $("feel").textContent=fmt(f);
   const b=bands.find(x=>f<=x[0]);
-  $("verdict").textContent=b[1]+(f!==t?" · на термометре "+fmt(t):"");
+  $("verdict").textContent=b[1]+" · температура воздуха "+fmt(t);
   const hue=Math.max(0,Math.min(1,(f+30)/65));
   document.documentElement.style.setProperty("--h",Math.round(215-hue*185));
   const items=[...b[2]];
@@ -419,7 +422,7 @@ function precipColor(k,cold){
   const c=k<0.5?mixc(DRY,MID,k*2):mixc(MID,wet,(k-0.5)*2);
   return "rgb("+c.join(",")+")";
 }
-const LEGEND='<div class="legend"><span><i style="background:rgb(246,195,122)"></i>сухо</span><span><i style="background:rgb(47,127,216)"></i>осадки</span><span>чем темнее синий, тем вероятнее</span></div>';
+const LEGEND='<div class="legend"><span><i style="background:rgb(246,195,122)"></i>сухо</span><span><i style="background:rgb(47,127,216)"></i>вероятны осадки</span></div>';
 function tl(d,i){
   const T=d.hours||[];
   if(!T.length)return "";
